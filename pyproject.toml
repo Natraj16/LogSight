@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "logsight"
+version = "1.0.0"
+description = "Zero-config, local, ML-based real-time log anomaly detector for developers"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+dependencies = [
+    "Flask>=3.0.0",
+    "scikit-learn>=1.4.0",
+    "numpy>=1.26.0",
+]
+
+[project.scripts]
+logsight = "logsight.app:main"
+
+[tool.setuptools.packages.find]
+include = ["logsight*"]
+
+[tool.setuptools.package-data]
+logsight = ["templates/*.html"]

@@ -1,0 +1,3062 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOG_SIGHT</title>
+    <meta name="description" content="Intelligent ML-based log anomaly detection dashboard for developers">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&family=Press+Start+2P&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <style>
+        /* ================================================================
+           DESIGN SYSTEM — TOKENS
+           ================================================================ */
+        :root {
+            --bg-primary: #000000;
+            --bg-secondary: #0B0B0B;
+            --bg-card: #111111;
+            --bg-elevated: #161616;
+            --bg-input: #0D0D0D;
+            --border: #202020;
+            --border-hover: #333333;
+            --border-active: #444444;
+            --text-primary: #E0E0E0;
+            --text-secondary: #777777;
+            --text-dim: #555555;
+            --text-muted: #444444;
+            --green: #00FF41;
+            --green-dim: rgba(0, 255, 65, 0.12);
+            --blue: #4D9EFF;
+            --blue-dim: rgba(77, 158, 255, 0.12);
+            --yellow: #FFD866;
+            --yellow-dim: rgba(255, 216, 102, 0.12);
+            --red: #FF5F56;
+            --red-dim: rgba(255, 95, 86, 0.12);
+            --purple: #C084FC;
+            --purple-dim: rgba(192, 132, 252, 0.12);
+            --orange: #FF9F43;
+            --mono-heading: 'JetBrains Mono', monospace;
+            --mono-body: 'IBM Plex Mono', monospace;
+            --mono-code: 'Fira Code', monospace;
+            --mono-logo: 'Press Start 2P', monospace;
+            --sidebar-width: 240px;
+            --topbar-height: 56px;
+            --radius: 6px;
+            --radius-sm: 4px;
+            --glow-blue: 0 0 12px rgba(77, 158, 255, 0.15);
+            --glow-green: 0 0 12px rgba(0, 255, 65, 0.12);
+            --glow-red: 0 0 12px rgba(255, 95, 86, 0.15);
+        }
+
+        /* ================================================================
+           RESET & BASE
+           ================================================================ */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 14px;
+        }
+
+        body {
+            font-family: var(--mono-body);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Subtle grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        a {
+            color: var(--blue);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* ================================================================
+           TOP NAVIGATION BAR
+           ================================================================ */
+        .topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--topbar-height);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            z-index: 100;
+            gap: 16px;
+        }
+
+        .logo {
+            font-family: var(--mono-heading);
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 0;
+            white-space: nowrap;
+            user-select: none;
+            flex-shrink: 0;
+        }
+
+        .logo .prompt {
+            color: var(--green);
+            margin-right: 6px;
+        }
+
+        .logo .text {
+            color: var(--text-primary);
+        }
+
+        .topbar-spacer {
+            flex: 1;
+        }
+
+        .topbar-search {
+            display: flex;
+            align-items: center;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 0 12px;
+            height: 32px;
+            width: 280px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .topbar-search:focus-within {
+            border-color: var(--border-hover);
+            box-shadow: var(--glow-blue);
+        }
+
+        .topbar-search input {
+            background: none;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-family: var(--mono-code);
+            font-size: 12px;
+            width: 100%;
+        }
+
+        .topbar-search input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .topbar-search .search-icon {
+            color: var(--text-dim);
+            margin-right: 8px;
+            font-size: 13px;
+        }
+
+        .topbar-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-family: var(--mono-heading);
+            flex-shrink: 0;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            flex-shrink: 0;
+        }
+
+        .status-dot.active {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 0 0 6px rgba(0, 255, 65, 0);
+            }
+        }
+
+        .topbar-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-family: var(--mono-body);
+            font-size: 12px;
+            padding: 6px 14px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .topbar-btn:hover {
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+            box-shadow: var(--glow-blue);
+        }
+
+        /* ================================================================
+           SIDEBAR
+           ================================================================ */
+        .sidebar {
+            position: fixed;
+            top: var(--topbar-height);
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 90;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 16px 0;
+            transition: width 0.3s ease;
+        }
+
+        .sidebar-section {
+            padding: 0 12px;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-section-label {
+            font-family: var(--mono-heading);
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-dim);
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            padding: 8px 12px 4px;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            margin: 1px 0;
+            border-radius: var(--radius);
+            font-family: var(--mono-heading);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+            user-select: none;
+            border-left: 2px solid transparent;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-primary);
+        }
+
+        .sidebar-item.active {
+            background: rgba(0, 255, 65, 0.04);
+            color: var(--green);
+            border-left-color: var(--green);
+        }
+
+        .sidebar-item .prompt-char {
+            color: var(--text-dim);
+            font-weight: 400;
+            flex-shrink: 0;
+            width: 14px;
+        }
+
+        .sidebar-item.active .prompt-char {
+            color: var(--green);
+        }
+
+        .sidebar-item .item-icon {
+            font-size: 15px;
+            width: 18px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 16px 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* ================================================================
+           MAIN CONTENT
+           ================================================================ */
+        .main {
+            position: fixed;
+            top: var(--topbar-height);
+            left: var(--sidebar-width);
+            right: 0;
+            bottom: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1;
+        }
+
+        .content-area {
+            padding: 24px;
+            max-width: 1400px;
+        }
+
+        /* Tabs */
+        .tab {
+            display: none;
+        }
+
+        .tab.active {
+            display: block;
+            animation: fadeInTab 0.3s ease;
+        }
+
+        @keyframes fadeInTab {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ================================================================
+           HERO BOOT SEQUENCE
+           ================================================================ */
+        .boot-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-primary);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s ease;
+        }
+
+        .boot-overlay.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .boot-overlay.hidden {
+            display: none;
+        }
+
+        .boot-terminal {
+            width: 560px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+        }
+
+        .boot-titlebar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--bg-elevated);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .boot-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .boot-dot.red {
+            background: #FF5F56;
+        }
+
+        .boot-dot.yellow {
+            background: #FFBD2E;
+        }
+
+        .boot-dot.green {
+            background: #27C93F;
+        }
+
+        .boot-titlebar-text {
+            font-family: var(--mono-heading);
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-left: 8px;
+        }
+
+        .boot-body {
+            padding: 20px;
+            font-family: var(--mono-code);
+            font-size: 13px;
+            color: var(--text-secondary);
+            min-height: 180px;
+        }
+
+        .boot-line {
+            opacity: 0;
+            margin-bottom: 6px;
+            white-space: nowrap;
+        }
+
+        .boot-line.visible {
+            opacity: 1;
+        }
+
+        .boot-line .prompt {
+            color: var(--green);
+        }
+
+        .boot-line .success {
+            color: var(--green);
+        }
+
+        .boot-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--green);
+            vertical-align: text-bottom;
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            50% {
+                opacity: 1;
+            }
+
+            51%,
+            100% {
+                opacity: 0;
+            }
+        }
+
+        /* ================================================================
+           PAGE HEADER
+           ================================================================ */
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .page-title {
+            font-family: var(--mono-heading);
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-title .prompt {
+            color: var(--green);
+        }
+
+        .page-subtitle {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        /* ================================================================
+           STAT CARDS
+           ================================================================ */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            position: relative;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--glow-blue);
+        }
+
+        .stat-card .stat-indicator {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+        }
+
+        .stat-card .stat-label {
+            font-family: var(--mono-heading);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-dim);
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-card .stat-label .prompt {
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .stat-card .stat-value {
+            font-family: var(--mono-heading);
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .stat-sparkline {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 24px;
+            margin-top: 8px;
+        }
+
+        .stat-card .stat-sparkline .bar {
+            flex: 1;
+            background: var(--border-hover);
+            border-radius: 1px;
+            min-height: 2px;
+            transition: height 0.4s ease;
+        }
+
+        /* Card color variants */
+        .stat-card.blue .stat-indicator {
+            background: var(--blue);
+        }
+
+        .stat-card.red .stat-indicator {
+            background: var(--red);
+        }
+
+        .stat-card.yellow .stat-indicator {
+            background: var(--yellow);
+        }
+
+        .stat-card.green .stat-indicator {
+            background: var(--green);
+        }
+
+        .stat-card.purple .stat-indicator {
+            background: var(--purple);
+        }
+
+        /* ================================================================
+           CARDS & PANELS
+           ================================================================ */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            transition: border-color 0.2s;
+        }
+
+        .card:hover {
+            border-color: var(--border-hover);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-family: var(--mono-heading);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .card-title .prompt {
+            color: var(--text-dim);
+        }
+
+        /* ================================================================
+           GRID LAYOUTS
+           ================================================================ */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .grid-2-1 {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .grid-1-2 {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .grid-full {
+            margin-bottom: 16px;
+        }
+
+        /* ================================================================
+           CHARTS
+           ================================================================ */
+        .chart-wrap {
+            position: relative;
+            height: 240px;
+        }
+
+        .chart-wrap.tall {
+            height: 300px;
+        }
+
+        .chart-wrap.short {
+            height: 180px;
+        }
+
+        /* ================================================================
+           TABLES
+           ================================================================ */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 10px 12px;
+            font-size: 13px;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--mono-body);
+        }
+
+        th {
+            font-family: var(--mono-heading);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+
+        td {
+            color: var(--text-secondary);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        /* ================================================================
+           LOG LEVEL BADGES
+           ================================================================ */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            font-family: var(--mono-heading);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .badge.info,
+        .badge.INFO {
+            background: var(--blue-dim);
+            color: var(--blue);
+        }
+
+        .badge.warning,
+        .badge.WARN,
+        .badge.WARNING {
+            background: var(--yellow-dim);
+            color: var(--yellow);
+        }
+
+        .badge.error,
+        .badge.ERROR {
+            background: var(--red-dim);
+            color: var(--red);
+        }
+
+        .badge.critical,
+        .badge.CRITICAL {
+            background: var(--red-dim);
+            color: var(--red);
+        }
+
+        .badge.success,
+        .badge.SUCCESS {
+            background: var(--green-dim);
+            color: var(--green);
+        }
+
+        .badge.debug,
+        .badge.DEBUG {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-dim);
+        }
+
+        /* Severity badges */
+        .severity.Critical {
+            background: var(--red-dim);
+            color: var(--red);
+        }
+
+        .severity.High {
+            background: rgba(255, 159, 67, 0.12);
+            color: var(--orange);
+        }
+
+        .severity.Medium {
+            background: var(--yellow-dim);
+            color: var(--yellow);
+        }
+
+        .severity.Low {
+            background: var(--green-dim);
+            color: var(--green);
+        }
+
+        /* ================================================================
+           BUTTONS
+           ================================================================ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-family: var(--mono-heading);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 7px 16px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+            box-shadow: var(--glow-blue);
+        }
+
+        .btn .prompt {
+            color: var(--green);
+        }
+
+        .btn-primary {
+            background: var(--green-dim);
+            border-color: rgba(0, 255, 65, 0.2);
+            color: var(--green);
+        }
+
+        .btn-primary:hover {
+            background: rgba(0, 255, 65, 0.18);
+            box-shadow: var(--glow-green);
+        }
+
+        .btn-danger {
+            background: var(--red-dim);
+            border-color: rgba(255, 95, 86, 0.2);
+            color: var(--red);
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 95, 86, 0.18);
+            box-shadow: var(--glow-red);
+        }
+
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 11px;
+        }
+
+        /* ================================================================
+           TIME RANGE PILLS
+           ================================================================ */
+        .range-pills {
+            display: inline-flex;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .range-pill {
+            background: none;
+            border: none;
+            border-right: 1px solid var(--border);
+            padding: 5px 14px;
+            font-family: var(--mono-heading);
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .range-pill:last-child {
+            border-right: none;
+        }
+
+        .range-pill:hover {
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .range-pill.active {
+            color: var(--green);
+            background: var(--green-dim);
+        }
+
+        /* ================================================================
+           LIVE LOG VIEWER
+           ================================================================ */
+        .log-viewer {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .log-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--bg-elevated);
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .log-toolbar .filter-btn {
+            background: none;
+            border: 1px solid var(--border);
+            padding: 3px 10px;
+            border-radius: var(--radius-sm);
+            font-family: var(--mono-heading);
+            font-size: 11px;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .log-toolbar .filter-btn:hover {
+            border-color: var(--border-hover);
+            color: var(--text-secondary);
+        }
+
+        .log-toolbar .filter-btn.active {
+            border-color: var(--blue);
+            color: var(--blue);
+            background: var(--blue-dim);
+        }
+
+        .log-search-input {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 4px 10px;
+            font-family: var(--mono-code);
+            font-size: 12px;
+            color: var(--text-primary);
+            outline: none;
+            width: 200px;
+            transition: border-color 0.2s;
+        }
+
+        .log-search-input:focus {
+            border-color: var(--border-hover);
+        }
+
+        .log-search-input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .log-entries {
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: var(--mono-code);
+            font-size: 12px;
+        }
+
+        .log-entry {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 6px 16px;
+            border-bottom: 1px solid rgba(32, 32, 32, 0.5);
+            transition: background 0.1s;
+            animation: slideInLog 0.2s ease;
+        }
+
+        .log-entry:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .log-entry .log-time {
+            color: var(--text-dim);
+            flex-shrink: 0;
+            width: 72px;
+            font-size: 11px;
+            padding-top: 1px;
+        }
+
+        .log-entry .log-badge {
+            flex-shrink: 0;
+            width: 72px;
+        }
+
+        .log-entry .log-service {
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .log-entry .log-message {
+            color: var(--text-primary);
+            flex: 1;
+            min-width: 0;
+            word-break: break-word;
+        }
+
+        @keyframes slideInLog {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ================================================================
+           ALERT FEED
+           ================================================================ */
+        .alert-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .alert-item:last-child {
+            border-bottom: none;
+        }
+
+        .alert-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 6px;
+        }
+
+        .alert-dot.Critical {
+            background: var(--red);
+        }
+
+        .alert-dot.High {
+            background: var(--orange);
+        }
+
+        .alert-dot.Medium {
+            background: var(--yellow);
+        }
+
+        .alert-dot.Low {
+            background: var(--green);
+        }
+
+        .alert-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .alert-msg {
+            font-size: 13px;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-family: var(--mono-code);
+        }
+
+        .alert-meta {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alert-count-badge {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 2px 8px;
+            font-family: var(--mono-heading);
+            font-size: 11px;
+            color: var(--text-dim);
+            flex-shrink: 0;
+        }
+
+        /* ================================================================
+           SCORE BAR
+           ================================================================ */
+        .score-bar {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .score-bar .bar-track {
+            width: 60px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .score-bar .bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.4s ease;
+        }
+
+        .score-bar .bar-value {
+            font-family: var(--mono-heading);
+            font-size: 11px;
+            color: var(--text-dim);
+            width: 50px;
+        }
+
+        /* ================================================================
+           TIMELINE
+           ================================================================ */
+        .timeline {
+            position: relative;
+            padding-left: 24px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: var(--border);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding: 8px 0 16px 0;
+            font-size: 13px;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: -21px;
+            top: 12px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 2px solid var(--bg-card);
+        }
+
+        .timeline-dot.info {
+            background: var(--blue);
+        }
+
+        .timeline-dot.warning {
+            background: var(--yellow);
+        }
+
+        .timeline-dot.error {
+            background: var(--red);
+        }
+
+        .timeline-dot.success {
+            background: var(--green);
+        }
+
+        .timeline-dot.debug {
+            background: var(--text-dim);
+        }
+
+        .timeline-time {
+            font-family: var(--mono-heading);
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-bottom: 2px;
+        }
+
+        .timeline-content {
+            font-family: var(--mono-code);
+            color: var(--text-secondary);
+        }
+
+        .timeline-content .highlight {
+            color: var(--text-primary);
+        }
+
+        /* ================================================================
+           ERROR EXPLORER
+           ================================================================ */
+        .error-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 8px;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .error-card:hover {
+            border-color: var(--border-hover);
+        }
+
+        .error-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .error-header:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .error-chevron {
+            color: var(--text-dim);
+            transition: transform 0.2s;
+            flex-shrink: 0;
+            font-size: 12px;
+        }
+
+        .error-card.expanded .error-chevron {
+            transform: rotate(90deg);
+        }
+
+        .error-summary {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .error-summary .error-msg {
+            font-family: var(--mono-code);
+            font-size: 13px;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .error-summary .error-info {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 3px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .error-detail {
+            display: none;
+            padding: 0 16px 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .error-card.expanded .error-detail {
+            display: block;
+        }
+
+        .error-code {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            font-family: var(--mono-code);
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 12px;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .error-label {
+            font-family: var(--mono-heading);
+            font-size: 11px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 12px;
+            margin-bottom: 4px;
+        }
+
+        /* ================================================================
+           SEARCH
+           ================================================================ */
+        .search-container {
+            margin-bottom: 24px;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 0 16px;
+            height: 48px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-bar:focus-within {
+            border-color: var(--green);
+            box-shadow: var(--glow-green);
+        }
+
+        .search-bar .search-prompt {
+            color: var(--green);
+            font-family: var(--mono-heading);
+            font-size: 14px;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .search-bar input {
+            background: none;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-family: var(--mono-code);
+            font-size: 14px;
+            flex: 1;
+            caret-color: var(--green);
+        }
+
+        .search-bar input::placeholder {
+            color: var(--text-dim);
+        }
+
+        /* ================================================================
+           EXPORT BUTTONS
+           ================================================================ */
+        .export-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .export-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .export-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--glow-blue);
+            transform: translateY(-2px);
+        }
+
+        .export-card .export-icon {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .export-card .export-label {
+            font-family: var(--mono-heading);
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .export-card .export-label .prompt {
+            color: var(--green);
+        }
+
+        /* ================================================================
+           SETTINGS FORM
+           ================================================================ */
+        .settings-group {
+            margin-bottom: 24px;
+        }
+
+        .settings-label {
+            font-family: var(--mono-heading);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-dim);
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .settings-input {
+            width: 100%;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 10px 14px;
+            font-family: var(--mono-code);
+            font-size: 13px;
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .settings-input:focus {
+            border-color: var(--border-hover);
+        }
+
+        .settings-input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .settings-checkbox-group {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .settings-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--mono-body);
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .settings-checkbox input[type="checkbox"] {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            background: var(--bg-primary);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .settings-checkbox input[type="checkbox"]:checked {
+            background: var(--green-dim);
+            border-color: var(--green);
+        }
+
+        .settings-checkbox input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            top: -1px;
+            left: 2px;
+            font-size: 12px;
+            color: var(--green);
+        }
+
+        /* ================================================================
+           EMPTY STATE
+           ================================================================ */
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--text-dim);
+            font-family: var(--mono-code);
+            font-size: 13px;
+        }
+
+        .empty-state .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background: var(--green);
+            vertical-align: text-bottom;
+            animation: blink 1s step-end infinite;
+            margin-left: 2px;
+        }
+
+        /* ================================================================
+           TOAST NOTIFICATION
+           ================================================================ */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-family: var(--mono-body);
+            font-size: 13px;
+            padding: 12px 20px;
+            border-radius: var(--radius);
+            z-index: 300;
+            display: none;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            animation: slideInToast 0.3s ease;
+        }
+
+        .toast.visible {
+            display: block;
+        }
+
+        @keyframes slideInToast {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ================================================================
+           RESPONSIVE
+           ================================================================ */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 56px;
+                overflow: hidden;
+            }
+
+            .sidebar .sidebar-section-label,
+            .sidebar .sidebar-item span:not(.item-icon):not(.prompt-char) {
+                display: none;
+            }
+
+            .sidebar .sidebar-item {
+                justify-content: center;
+                padding: 10px 0;
+            }
+
+            .sidebar .sidebar-item .prompt-char {
+                display: none;
+            }
+
+            .sidebar .sidebar-item .item-icon {
+                width: auto;
+            }
+
+            .main {
+                left: 56px;
+            }
+
+            .sidebar-footer {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stat-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .grid-2,
+            .grid-2-1,
+            .grid-1-2,
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .export-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .content-area {
+                padding: 16px;
+            }
+
+            .topbar-search {
+                display: none;
+            }
+        }
+
+        /* ================================================================
+           UTILITY: CARD STAGGER ANIMATION
+           ================================================================ */
+        .animate-in {
+            animation: fadeSlideIn 0.4s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- ===================== BOOT SEQUENCE OVERLAY ===================== -->
+    <div class="boot-overlay" id="boot-overlay">
+        <div class="boot-terminal">
+            <div class="boot-titlebar">
+                <div class="boot-dot red"></div>
+                <div class="boot-dot yellow"></div>
+                <div class="boot-dot green"></div>
+                <span class="boot-titlebar-text">log_analyzer — bash</span>
+            </div>
+            <div class="boot-body" id="boot-body">
+                <div class="boot-line" id="boot-0"><span class="prompt">&gt;</span> Initializing...</div>
+                <div class="boot-line" id="boot-1"><span class="prompt">&gt;</span> Reading terminal...</div>
+                <div class="boot-line" id="boot-2"><span class="prompt">&gt;</span> Parsing logs...</div>
+                <div class="boot-line" id="boot-3"><span class="prompt">&gt;</span> Detecting stack traces...</div>
+                <div class="boot-line" id="boot-4"><span class="prompt">&gt;</span> <span class="success">Analysis
+                        Complete ✓</span></div>
+                <div class="boot-line" id="boot-cursor" style="margin-top: 4px;"><span class="boot-cursor"></span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== TOP NAVIGATION BAR ===================== -->
+    <div class="topbar">
+        <div class="logo">
+            <span class="prompt">&gt;</span>
+            <span class="text">LOG_ANALYZER</span>
+        </div>
+
+        <div class="topbar-spacer"></div>
+
+        <div class="topbar-search">
+            <span class="search-icon">⌕</span>
+            <input type="text" id="global-search-input" placeholder="Search logs... (Ctrl+K)" />
+        </div>
+
+        <div class="topbar-status">
+            <div class="status-dot active" id="status-dot"></div>
+            <span id="status-text">MONITORING</span>
+        </div>
+
+        <button class="topbar-btn" id="monitoring-btn" onclick="toggleMonitoring()">⏹ Stop</button>
+    </div>
+
+    <!-- ===================== SIDEBAR ===================== -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-section">
+            <div class="sidebar-section-label">Navigation</div>
+            <div class="sidebar-item active" onclick="switchTab('dashboard', this)" data-tab="dashboard">
+                <span class="prompt-char">&gt;</span>
+                <span class="item-icon">◫</span>
+                <span>Dashboard</span>
+            </div>
+            <div class="sidebar-item" onclick="switchTab('live-logs', this)" data-tab="live-logs">
+                <span class="prompt-char">&gt;</span>
+                <span class="item-icon">▤</span>
+                <span>Live Logs</span>
+            </div>
+            <div class="sidebar-item" onclick="switchTab('analytics', this)" data-tab="analytics">
+                <span class="prompt-char">&gt;</span>
+                <span class="item-icon">◩</span>
+                <span>Analytics</span>
+            </div>
+            <div class="sidebar-item" onclick="switchTab('error-explorer', this)" data-tab="error-explorer">
+                <span class="prompt-char">&gt;</span>
+                <span class="item-icon">⚠</span>
+                <span>Error Explorer</span>
+            </div>
+            <div class="sidebar-item" onclick="switchTab('alerts', this)" data-tab="alerts">
+                <span class="prompt-char">&gt;</span>
+                <span class="item-icon">◉</span>
+                <span>Alerts</span>
+            </div>
+            <div class="sidebar-item" onclick="switchTab('timeline', this)" data-tab="timeline">
+                <span class="prompt-char">&gt;</span>
+                <span class="item-icon">⏱</span>
+                <span>Timeline</span>
+            </div>
+        </div>
+        <div class="sidebar-section">
+            <div class="sidebar-section-label">Tools</div>
+            <div class="sidebar-item" onclick="switchTab('search', this)" data-tab="search">
+                <span class="prompt-char">&gt;</span>
+                <span class="item-icon">⌕</span>
+                <span>Search</span>
+            </div>
+            <div class="sidebar-item" onclick="switchTab('export', this)" data-tab="export">
+                <span class="prompt-char">&gt;</span>
+                <span class="item-icon">↗</span>
+                <span>Export</span>
+            </div>
+            <div class="sidebar-item" onclick="switchTab('settings', this)" data-tab="settings">
+                <span class="prompt-char">&gt;</span>
+                <span class="item-icon">⚙</span>
+                <span>Settings</span>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <div
+                style="font-family: var(--mono-heading); font-size: 10px; color: var(--text-dim); letter-spacing: 0.5px;">
+                v1.0.0 — ML Powered
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== MAIN CONTENT ===================== -->
+    <div class="main" id="main-content">
+        <div class="content-area">
+
+            <!-- ==================== DASHBOARD TAB ==================== -->
+            <div id="dashboard" class="tab active">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title"><span class="prompt">&gt;</span> Dashboard</div>
+                        <div class="page-subtitle">Real-time system overview</div>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn" onclick="fetchOverview()"><span class="prompt">&gt;</span> Refresh</button>
+                    </div>
+                </div>
+
+                <!-- Stat Cards -->
+                <div class="stat-grid">
+                    <div class="stat-card blue animate-in" style="animation-delay:0ms">
+                        <div class="stat-indicator"></div>
+                        <div class="stat-label"><span class="prompt">&gt;</span> TOTAL_LOGS</div>
+                        <div class="stat-value" id="dash-total-logs">0</div>
+                        <div class="stat-sparkline" id="spark-logs"></div>
+                    </div>
+                    <div class="stat-card red animate-in" style="animation-delay:60ms">
+                        <div class="stat-indicator"></div>
+                        <div class="stat-label"><span class="prompt">&gt;</span> CRITICAL</div>
+                        <div class="stat-value" id="dash-critical">0</div>
+                        <div class="stat-sparkline" id="spark-critical"></div>
+                    </div>
+                    <div class="stat-card yellow animate-in" style="animation-delay:120ms">
+                        <div class="stat-indicator"></div>
+                        <div class="stat-label"><span class="prompt">&gt;</span> WARNINGS</div>
+                        <div class="stat-value" id="dash-warnings">0</div>
+                        <div class="stat-sparkline" id="spark-warnings"></div>
+                    </div>
+                    <div class="stat-card green animate-in" style="animation-delay:180ms">
+                        <div class="stat-indicator"></div>
+                        <div class="stat-label"><span class="prompt">&gt;</span> ANOMALY_RATE</div>
+                        <div class="stat-value" id="dash-anomaly-rate">0%</div>
+                        <div class="stat-sparkline" id="spark-anomaly"></div>
+                    </div>
+                </div>
+
+                <!-- Overview Charts + Recent Data -->
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title"><span class="prompt">&gt;</span> SEVERITY_DISTRIBUTION</div>
+                        </div>
+                        <div class="chart-wrap"><canvas id="ov-severity-pie"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title"><span class="prompt">&gt;</span> LOG_LEVEL_BREAKDOWN</div>
+                        </div>
+                        <div class="chart-wrap"><canvas id="ov-level-pie"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title"><span class="prompt">&gt;</span> RECENT_LOGS</div>
+                            <button class="btn btn-sm"
+                                onclick="switchTab('live-logs', document.querySelector('[data-tab=live-logs]'))">View
+                                all →</button>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Level</th>
+                                    <th>Service</th>
+                                    <th>Message</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ov-logs-body"></tbody>
+                        </table>
+                        <div class="empty-state" id="ov-logs-empty" style="display:none"><span class="prompt"
+                                style="color:var(--green)">&gt;</span> Waiting for logs...<span class="cursor"></span>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title"><span class="prompt">&gt;</span> RECENT_ALERTS</div>
+                            <button class="btn btn-sm"
+                                onclick="switchTab('alerts', document.querySelector('[data-tab=alerts]'))">View all
+                                →</button>
+                        </div>
+                        <div id="ov-alerts-feed"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== LIVE LOGS TAB ==================== -->
+            <div id="live-logs" class="tab">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title"><span class="prompt">&gt;</span> Live Logs</div>
+                        <div class="page-subtitle" id="logs-count-label">0 entries</div>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn" id="autoscroll-btn" onclick="toggleAutoScroll()"><span
+                                class="prompt">&gt;</span> Auto-scroll: ON</button>
+                        <button class="btn" onclick="fetchLogs()"><span class="prompt">&gt;</span> Refresh</button>
+                    </div>
+                </div>
+
+                <div class="log-viewer">
+                    <div class="log-toolbar">
+                        <button class="filter-btn active" data-level="ALL"
+                            onclick="setLogFilter('ALL', this)">ALL</button>
+                        <button class="filter-btn" data-level="INFO" onclick="setLogFilter('INFO', this)">INFO</button>
+                        <button class="filter-btn" data-level="WARN" onclick="setLogFilter('WARN', this)">WARN</button>
+                        <button class="filter-btn" data-level="ERROR"
+                            onclick="setLogFilter('ERROR', this)">ERROR</button>
+                        <button class="filter-btn" data-level="DEBUG"
+                            onclick="setLogFilter('DEBUG', this)">DEBUG</button>
+                        <div style="flex:1"></div>
+                        <input type="text" class="log-search-input" id="log-search" placeholder="Filter messages..."
+                            oninput="filterLogsView()">
+                    </div>
+                    <div class="log-entries" id="log-entries-container">
+                        <div class="empty-state" id="logs-empty"><span class="prompt"
+                                style="color:var(--green)">&gt;</span> Waiting for logs...<span class="cursor"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== ANALYTICS TAB ==================== -->
+            <div id="analytics" class="tab">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title"><span class="prompt">&gt;</span> Analytics</div>
+                        <div class="page-subtitle">Performance metrics and trends</div>
+                    </div>
+                    <div class="range-pills" id="range-controls">
+                        <button class="range-pill active" onclick="setRange('15m', this)">15m</button>
+                        <button class="range-pill" onclick="setRange('1h', this)">1h</button>
+                        <button class="range-pill" onclick="setRange('24h', this)">24h</button>
+                    </div>
+                </div>
+
+                <div class="grid-2-1">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title"><span class="prompt">&gt;</span> SEVERITY_OVER_TIME</div>
+                        </div>
+                        <div class="chart-wrap tall"><canvas id="chart-severity-time"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title"><span class="prompt">&gt;</span> LOG_LEVELS</div>
+                        </div>
+                        <div class="chart-wrap tall"><canvas id="chart-log-levels"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title"><span class="prompt">&gt;</span> ANOMALY_SCORE_TREND</div>
+                        </div>
+                        <div class="chart-wrap"><canvas id="chart-anomaly-score"></canvas></div>
+                        <div
+                            style="margin-top:12px; padding-top:10px; border-top:1px solid var(--border); font-size:11px; color:var(--text-dim); display:flex; justify-content:center; gap:20px; font-family:var(--mono-heading);">
+                            <span><span style="color:var(--green)">●</span> &gt; 0 (Safe)</span>
+                            <span><span style="color:var(--yellow)">●</span> 0 to -0.2 (Warning)</span>
+                            <span><span style="color:var(--red)">●</span> &lt; -0.2 (Critical)</span>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title"><span class="prompt">&gt;</span> TOP_NOISY_SERVICES</div>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Alerts</th>
+                                </tr>
+                            </thead>
+                            <tbody id="noisy-services-body"></tbody>
+                        </table>
+                        <div class="empty-state" id="noisy-empty" style="display:none;padding:24px"><span class="prompt"
+                                style="color:var(--green)">&gt;</span> No data<span class="cursor"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== ERROR EXPLORER TAB ==================== -->
+            <div id="error-explorer" class="tab">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title"><span class="prompt">&gt;</span> Error Explorer</div>
+                        <div class="page-subtitle">Detected anomalies and stack traces</div>
+                    </div>
+                    <button class="btn" onclick="fetchErrors()"><span class="prompt">&gt;</span> Refresh</button>
+                </div>
+                <div id="error-list">
+                    <div class="empty-state"><span class="prompt" style="color:var(--green)">&gt;</span> Waiting for
+                        errors...<span class="cursor"></span></div>
+                </div>
+            </div>
+
+            <!-- ==================== ALERTS TAB ==================== -->
+            <div id="alerts" class="tab">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title"><span class="prompt">&gt;</span> Alerts</div>
+                        <div class="page-subtitle">Anomaly detection feed</div>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-danger" onclick="clearAlerts()"><span class="prompt">&gt;</span> Clear
+                            All</button>
+                    </div>
+                </div>
+
+                <div class="stat-grid">
+                    <div class="stat-card red animate-in" style="animation-delay:0ms; cursor:pointer;" onclick="setAlertFilter('Critical')">
+                        <div class="stat-indicator"></div>
+                        <div class="stat-label"><span class="prompt">&gt;</span> CRITICAL</div>
+                        <div class="stat-value" id="feed-critical">0</div>
+                    </div>
+                    <div class="stat-card animate-in" style="animation-delay:60ms; cursor:pointer;" onclick="setAlertFilter('High')">
+                        <div class="stat-indicator" style="background:var(--orange)"></div>
+                        <div class="stat-label"><span class="prompt">&gt;</span> HIGH</div>
+                        <div class="stat-value" id="feed-high">0</div>
+                    </div>
+                    <div class="stat-card yellow animate-in" style="animation-delay:120ms; cursor:pointer;" onclick="setAlertFilter('Medium')">
+                        <div class="stat-indicator"></div>
+                        <div class="stat-label"><span class="prompt">&gt;</span> MEDIUM</div>
+                        <div class="stat-value" id="feed-medium">0</div>
+                    </div>
+                    <div class="stat-card green animate-in" style="animation-delay:180ms; cursor:pointer;" onclick="setAlertFilter('Low')">
+                        <div class="stat-indicator"></div>
+                        <div class="stat-label"><span class="prompt">&gt;</span> LOW</div>
+                        <div class="stat-value" id="feed-low">0</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div id="alert-feed-container">
+                        <div class="empty-state"><span class="prompt" style="color:var(--green)">&gt;</span> Listening
+                            for anomalies...<span class="cursor"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== TIMELINE TAB ==================== -->
+            <div id="timeline" class="tab">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title"><span class="prompt">&gt;</span> Timeline</div>
+                        <div class="page-subtitle">Chronological application lifecycle</div>
+                    </div>
+                    <button class="btn" onclick="fetchTimeline()"><span class="prompt">&gt;</span> Refresh</button>
+                </div>
+
+                <div class="card">
+                    <div class="timeline" id="timeline-container">
+                        <div class="empty-state" style="padding-left:0"><span class="prompt"
+                                style="color:var(--green)">&gt;</span> Waiting for events...<span class="cursor"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== SEARCH TAB ==================== -->
+            <div id="search" class="tab">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title"><span class="prompt">&gt;</span> Search</div>
+                        <div class="page-subtitle">Search logs by message, service, or level</div>
+                    </div>
+                </div>
+
+                <div class="search-container">
+                    <div class="search-bar">
+                        <span class="search-prompt">&gt;</span>
+                        <input type="text" id="search-input" placeholder="Type to search logs... (supports regex)"
+                            oninput="performSearch()">
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div id="search-results">
+                        <div class="empty-state"><span class="prompt" style="color:var(--green)">&gt;</span> Enter a
+                            query above<span class="cursor"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== EXPORT TAB ==================== -->
+            <div id="export" class="tab">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title"><span class="prompt">&gt;</span> Export</div>
+                        <div class="page-subtitle">Download logs and reports</div>
+                    </div>
+                </div>
+
+                <div class="export-grid">
+                    <div class="export-card" onclick="exportData('json')">
+                        <div class="export-icon">{ }</div>
+                        <div class="export-label"><span class="prompt">&gt;</span> Export JSON</div>
+                    </div>
+                    <div class="export-card" onclick="exportData('csv')">
+                        <div class="export-icon">▤</div>
+                        <div class="export-label"><span class="prompt">&gt;</span> Export CSV</div>
+                    </div>
+                    <div class="export-card" onclick="exportData('report')">
+                        <div class="export-icon">📊</div>
+                        <div class="export-label"><span class="prompt">&gt;</span> Download Report</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== SETTINGS TAB ==================== -->
+            <div id="settings" class="tab">
+                <div class="page-header">
+                    <div>
+                        <div class="page-title"><span class="prompt">&gt;</span> Settings</div>
+                        <div class="page-subtitle">Configure log analyzer</div>
+                    </div>
+                </div>
+
+                <div class="card" style="max-width:640px">
+                    <form id="settings-form" method="POST" action="/configure">
+                        <div class="settings-group">
+                            <label class="settings-label">Log Path</label>
+                            <input class="settings-input" type="text" name="log_path" id="cfg-log-path"
+                                value="{{ log_path }}" placeholder="logs/application.log">
+                        </div>
+
+                        <div class="settings-group">
+                            <label class="settings-label">Log Levels</label>
+                            <div class="settings-checkbox-group">
+                                <label class="settings-checkbox">
+                                    <input type="checkbox" name="log_levels" value="INFO" {{ 'checked' if 'INFO' in
+                                        log_levels else '' }}>
+                                    INFO
+                                </label>
+                                <label class="settings-checkbox">
+                                    <input type="checkbox" name="log_levels" value="WARN" {{ 'checked' if 'WARN' in
+                                        log_levels else '' }}>
+                                    WARN
+                                </label>
+                                <label class="settings-checkbox">
+                                    <input type="checkbox" name="log_levels" value="ERROR" {{ 'checked' if 'ERROR' in
+                                        log_levels else '' }}>
+                                    ERROR
+                                </label>
+                                <label class="settings-checkbox">
+                                    <input type="checkbox" name="log_levels" value="DEBUG" {{ 'checked' if 'DEBUG' in
+                                        log_levels else '' }}>
+                                    DEBUG
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <label class="settings-label">Custom Levels</label>
+                            <input class="settings-input" type="text" name="custom_levels" value="{{ custom_levels }}"
+                                placeholder="TRACE, FATAL, ...">
+                        </div>
+
+                        <div class="settings-group">
+                            <label class="settings-label">Keywords</label>
+                            <input class="settings-input" type="text" name="keywords" value="{{ keywords }}"
+                                placeholder="timeout, connection, ...">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary"><span class="prompt">&gt;</span> Save
+                            Configuration</button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ===================== TOAST ===================== -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ===================== JAVASCRIPT ===================== -->
+    <script>
+        /* ================================================================
+           BOOT SEQUENCE
+           ================================================================ */
+        (function () {
+            const overlay = document.getElementById('boot-overlay');
+            if (sessionStorage.getItem('la-booted')) {
+                overlay.classList.add('hidden');
+                return;
+            }
+
+            const lines = ['boot-0', 'boot-1', 'boot-2', 'boot-3', 'boot-4'];
+            const cursorEl = document.getElementById('boot-cursor');
+            cursorEl.querySelector('.boot-cursor').style.display = 'none';
+
+            let delay = 400;
+            lines.forEach((id, i) => {
+                setTimeout(() => {
+                    const el = document.getElementById(id);
+                    el.classList.add('visible');
+                    el.style.animation = 'fadeSlideIn 0.3s ease forwards';
+                }, delay);
+                delay += 500 + Math.random() * 300;
+            });
+
+            setTimeout(() => {
+                cursorEl.classList.add('visible');
+                cursorEl.querySelector('.boot-cursor').style.display = 'inline-block';
+            }, delay);
+
+            setTimeout(() => {
+                overlay.classList.add('fade-out');
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    sessionStorage.setItem('la-booted', '1');
+                }, 600);
+            }, delay + 800);
+        })();
+
+        /* ================================================================
+           NAVIGATION
+           ================================================================ */
+        function switchTab(id, el) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+            const tab = document.getElementById(id);
+            if (tab) tab.classList.add('active');
+            if (el) el.classList.add('active');
+
+            // Trigger data fetches
+            if (id === 'analytics') fetchAnalytics();
+            if (id === 'live-logs') fetchLogs();
+            if (id === 'alerts') fetchAlerts();
+            if (id === 'error-explorer') fetchErrors();
+            if (id === 'timeline') fetchTimeline();
+            if (id === 'dashboard') fetchOverview();
+        }
+
+        // Keyboard shortcut: Ctrl+K for search
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                switchTab('search', document.querySelector('[data-tab=search]'));
+                setTimeout(() => document.getElementById('search-input').focus(), 100);
+            }
+        });
+
+        /* ================================================================
+           TOAST
+           ================================================================ */
+        let unreadCount = 0;
+        
+        window.addEventListener('focus', () => {
+            unreadCount = 0;
+            document.title = 'LogSight';
+        });
+
+        function updateTabTitle() {
+            if (!document.hasFocus() && unreadCount > 0) {
+                document.title = `(${unreadCount}) LogSight`;
+            } else {
+                document.title = 'LogSight';
+            }
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('visible');
+            setTimeout(() => {
+                t.classList.remove('visible');
+            }, 4000);
+        }
+
+        let appConfig = {};
+        
+        function fetchConfig() {
+            fetch('/api/config').then(r => r.json()).then(data => {
+                appConfig = data;
+            });
+        }
+
+        function playCriticalSound() {
+            if (appConfig.sound_alerts_enabled !== true) return;
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                
+                // An alarming high-pitch double beep
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                osc.frequency.setValueAtTime(1200, ctx.currentTime + 0.1);
+                
+                gainNode.gain.setValueAtTime(0.05, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+                
+                osc.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+            } catch (e) {
+                console.log("Audio not supported or blocked by browser policy");
+            }
+        }
+
+        /* ================================================================
+           UTILITY
+           ================================================================ */
+        function fmtScore(v) {
+            if (v === null || v === undefined) return '—';
+            const n = Number(v);
+            if (!isFinite(n)) return '—';
+            return n.toFixed(4);
+        }
+        function fmtTime(ts) {
+            if (!ts) return '—';
+            const parts = ts.split('T');
+            if (parts.length > 1) return parts[1].substring(0, 8);
+            // Try space-separated
+            const sp = ts.split(' ');
+            if (sp.length > 1) return sp[1].substring(0, 8);
+            return ts.substring(11, 19) || ts;
+        }
+        function fmtShortTime(ts) {
+            if (!ts) return '—';
+            const full = fmtTime(ts);
+            return full.substring(0, 5);
+        }
+        function escapeHtml(text) {
+            const d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
+        }
+
+        // CountUp animation
+        function countUp(element, target, duration = 600) {
+            const start = parseInt(element.textContent) || 0;
+            if (start === target) return;
+            const startTime = performance.now();
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                // Ease out
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const current = Math.round(start + (target - start) * eased);
+                element.textContent = current;
+                if (progress < 1) requestAnimationFrame(update);
+            }
+            requestAnimationFrame(update);
+        }
+
+        // Generate sparkline bars
+        function updateSparkline(containerId, values, color) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const max = Math.max(...values, 1);
+            container.innerHTML = '';
+            values.forEach(v => {
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.style.height = Math.max((v / max) * 24, 2) + 'px';
+                bar.style.background = color || 'var(--border-hover)';
+                container.appendChild(bar);
+            });
+        }
+
+        /* ================================================================
+           CHART CONFIGURATION
+           ================================================================ */
+        Chart.defaults.font.family = "'JetBrains Mono', monospace";
+        Chart.defaults.font.size = 11;
+        Chart.defaults.color = '#555555';
+        Chart.defaults.plugins.legend.labels.boxWidth = 10;
+        Chart.defaults.plugins.legend.labels.padding = 12;
+        Chart.defaults.plugins.legend.labels.color = '#777777';
+        Chart.defaults.plugins.tooltip.backgroundColor = '#1A1A1A';
+        Chart.defaults.plugins.tooltip.borderColor = '#333333';
+        Chart.defaults.plugins.tooltip.borderWidth = 1;
+        Chart.defaults.plugins.tooltip.titleFont = { family: "'JetBrains Mono', monospace", size: 12, weight: '600' };
+        Chart.defaults.plugins.tooltip.bodyFont = { family: "'Fira Code', monospace", size: 11 };
+        Chart.defaults.plugins.tooltip.padding = 10;
+        Chart.defaults.plugins.tooltip.cornerRadius = 4;
+        Chart.defaults.plugins.tooltip.titleColor = '#E0E0E0';
+        Chart.defaults.plugins.tooltip.bodyColor = '#AAAAAA';
+        Chart.defaults.animation = { duration: 800, easing: 'easeOutQuart' };
+
+        const chartInstances = {};
+        function destroyChart(key) {
+            if (chartInstances[key]) { chartInstances[key].destroy(); delete chartInstances[key]; }
+        }
+
+        const darkGridColor = 'rgba(255,255,255,0.04)';
+        const darkScaleOpts = {
+            grid: { color: darkGridColor, drawBorder: false },
+            ticks: { color: '#555', font: { size: 10 } }
+        };
+
+        /* ================================================================
+           OVERVIEW / DASHBOARD
+           ================================================================ */
+        let sparkHistory = { logs: [], critical: [], warnings: [], anomaly: [] };
+        const SPARK_LEN = 12;
+
+        function fetchOverview() {
+            Promise.all([
+                fetch('/api/logs').then(r => r.json()),
+                fetch('/api/alerts').then(r => r.json()),
+                fetch('/api/overview_summary').then(r => r.json())
+            ]).then(([logsData, alertsData, summaryData]) => {
+                const logs = logsData.logs || [];
+                const alerts = alertsData.alerts || [];
+                const counts = alertsData.alert_counts || {};
+
+                // CountUp stats
+                const totalLogs = logs.length;
+                const critical = counts['Critical'] || 0;
+                const high = counts['High'] || 0;
+                const medium = counts['Medium'] || 0;
+                const low = counts['Low'] || 0;
+                const warnings = medium;
+
+                countUp(document.getElementById('dash-total-logs'), totalLogs);
+                countUp(document.getElementById('dash-critical'), critical);
+                countUp(document.getElementById('dash-warnings'), warnings);
+
+                // Anomaly rate
+                let anomalies = 0;
+                logs.forEach(l => { if (l.anomaly_score < 0) anomalies++; });
+                const rate = logs.length > 0 ? ((anomalies / logs.length) * 100).toFixed(1) : '0';
+                document.getElementById('dash-anomaly-rate').textContent = rate + '%';
+
+                // Sparkline data
+                sparkHistory.logs.push(totalLogs);
+                sparkHistory.critical.push(critical);
+                sparkHistory.warnings.push(warnings);
+                sparkHistory.anomaly.push(parseFloat(rate));
+                ['logs', 'critical', 'warnings', 'anomaly'].forEach(k => {
+                    if (sparkHistory[k].length > SPARK_LEN) sparkHistory[k] = sparkHistory[k].slice(-SPARK_LEN);
+                });
+                updateSparkline('spark-logs', sparkHistory.logs, 'var(--blue)');
+                updateSparkline('spark-critical', sparkHistory.critical, 'var(--red)');
+                updateSparkline('spark-warnings', sparkHistory.warnings, 'var(--yellow)');
+                updateSparkline('spark-anomaly', sparkHistory.anomaly, 'var(--green)');
+
+                // Recent logs table
+                const tbody = document.getElementById('ov-logs-body');
+                const emptyLogs = document.getElementById('ov-logs-empty');
+                const recentLogs = logs.slice(-8).reverse();
+                if (recentLogs.length === 0) {
+                    tbody.innerHTML = '';
+                    emptyLogs.style.display = 'block';
+                } else {
+                    emptyLogs.style.display = 'none';
+                    tbody.innerHTML = '';
+                    recentLogs.forEach(l => {
+                        tbody.innerHTML += `<tr>
+                            <td style="white-space:nowrap;color:var(--text-dim);font-size:12px;font-family:var(--mono-code)">${fmtTime(l.timestamp)}</td>
+                            <td><span class="badge ${l.level || ''}">${l.level || '—'}</span></td>
+                            <td style="color:var(--text-secondary)">${escapeHtml(l.service || '—')}</td>
+                            <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-dim)">${escapeHtml(l.message || '')}</td>
+                        </tr>`;
+                    });
+                }
+
+                // Recent alerts
+                const feedEl = document.getElementById('ov-alerts-feed');
+                const recentAlerts = alerts.slice(0, 6);
+                if (recentAlerts.length === 0) {
+                    feedEl.innerHTML = '<div class="empty-state"><span class="prompt" style="color:var(--green)">&gt;</span> No alerts<span class="cursor"></span></div>';
+                } else {
+                    feedEl.innerHTML = '';
+                    recentAlerts.forEach(a => {
+                        feedEl.innerHTML += `<div class="alert-item">
+                            <div class="alert-dot ${a.severity || ''}"></div>
+                            <div class="alert-body">
+                                <div class="alert-msg">${escapeHtml(a.message || a.log_level || 'Alert')}</div>
+                                <div class="alert-meta">
+                                    <span>${fmtTime(a.timestamp)}</span>
+                                    <span>·</span>
+                                    <span>${escapeHtml(a.service || '—')}</span>
+                                    <span>·</span>
+                                    <span class="badge severity ${a.severity || ''}" style="font-size:10px">${a.severity || ''}</span>
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+                }
+
+                // Overview charts
+                renderOverviewSeverityPie(summaryData.alert_counts || counts);
+                renderOverviewLevelPie(summaryData.log_level_proportions || {});
+            });
+        }
+
+        function renderOverviewSeverityPie(counts) {
+            destroyChart('ov-sev');
+            const labels = Object.keys(counts);
+            const data = Object.values(counts);
+            const total = data.reduce((a, b) => a + b, 0);
+            const colors = { Critical: '#FF5F56', High: '#FF9F43', Medium: '#FFD866', Low: '#00FF41' };
+            chartInstances['ov-sev'] = new Chart(document.getElementById('ov-severity-pie'), {
+                type: 'doughnut',
+                data: {
+                    labels: total === 0 ? ['No Data'] : labels,
+                    datasets: [{ 
+                        data: total === 0 ? [1] : data, 
+                        backgroundColor: total === 0 ? ['#222'] : labels.map(l => colors[l] || '#333'), 
+                        borderWidth: 0, 
+                        borderColor: '#111111' 
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '70%',
+                    plugins: { legend: { position: 'bottom', labels: { padding: 16 } }, tooltip: { enabled: total !== 0 } }
+                }
+            });
+        }
+
+        function renderOverviewLevelPie(proportions) {
+            destroyChart('ov-lvl');
+            const labels = Object.keys(proportions);
+            const data = Object.values(proportions);
+            const total = data.reduce((a, b) => a + b, 0);
+            const colors = { ERROR: '#FF5F56', CRITICAL: '#FF5F56', WARN: '#FFD866', WARNING: '#FFD866', INFO: '#4D9EFF', DEBUG: '#555555' };
+            chartInstances['ov-lvl'] = new Chart(document.getElementById('ov-level-pie'), {
+                type: 'doughnut',
+                data: {
+                    labels: total === 0 ? ['No Data'] : labels,
+                    datasets: [{ 
+                        data: total === 0 ? [1] : data, 
+                        backgroundColor: total === 0 ? ['#222'] : labels.map(l => colors[l] || '#333'), 
+                        borderWidth: 0, 
+                        borderColor: '#111111' 
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '70%',
+                    plugins: { legend: { position: 'bottom', labels: { padding: 16 } }, tooltip: { enabled: total !== 0 } }
+                }
+            });
+        }
+
+        /* ================================================================
+           ALERTS FEED
+           ================================================================ */
+        let alertCache = [];
+
+        function fetchAlerts() {
+            fetch('/api/alerts').then(r => r.json()).then(data => {
+                const newAlerts = data.alerts || [];
+                const counts = data.alert_counts || {};
+
+                if (newAlerts.length > alertCache.length) {
+                    const diff = newAlerts.slice(0, newAlerts.length - alertCache.length);
+                    const hasCritical = diff.some(a => (a.severity || '').toLowerCase() === 'critical');
+                    const numImportant = diff.filter(a => ['critical', 'high'].includes((a.severity || '').toLowerCase())).length;
+                    
+                    if (numImportant > 0 && !document.hasFocus()) {
+                        unreadCount += numImportant;
+                        updateTabTitle();
+                    }
+                    
+                    if (hasCritical) {
+                        showToast('⚠ Critical anomaly detected!');
+                        playCriticalSound();
+                    }
+                }
+                alertCache = newAlerts;
+
+                // Update stat cards
+                const critEl = document.getElementById('feed-critical');
+                const highEl = document.getElementById('feed-high');
+                const medEl = document.getElementById('feed-medium');
+                const lowEl = document.getElementById('feed-low');
+                if (critEl) countUp(critEl, counts['Critical'] || 0);
+                if (highEl) countUp(highEl, counts['High'] || 0);
+                if (medEl) countUp(medEl, counts['Medium'] || 0);
+                if (lowEl) countUp(lowEl, counts['Low'] || 0);
+
+                renderAlertFeed();
+            });
+        }
+
+        let alertFeedFilter = 'ALL';
+
+        function setAlertFilter(severity) {
+            alertFeedFilter = alertFeedFilter === severity ? 'ALL' : severity;
+            renderAlertFeed();
+        }
+
+        function renderAlertFeed() {
+            const container = document.getElementById('alert-feed-container');
+            if (alertCache.length === 0) {
+                container.innerHTML = '<div class="empty-state"><span class="prompt" style="color:var(--green)">&gt;</span> No alerts found<span class="cursor"></span></div>';
+                return;
+            }
+
+            // Deduplicate
+            const deduped = [];
+            alertCache.forEach(a => {
+                const existing = deduped.find(d => d.service === a.service && d.message === a.message && d.severity === a.severity);
+                if (existing) { existing.count = (existing.count || 1) + 1; }
+                else { deduped.push({ ...a, count: 1 }); }
+            });
+
+            const filtered = alertFeedFilter === 'ALL' ? deduped : deduped.filter(a => a.severity === alertFeedFilter);
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="empty-state"><span class="prompt" style="color:var(--green)">&gt;</span> No ${alertFeedFilter} alerts found<span class="cursor"></span></div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            filtered.forEach(a => {
+                const countBadge = a.count > 1 ? `<span class="alert-count-badge">×${a.count}</span>` : '';
+                container.innerHTML += `<div class="alert-item">
+                    <div class="alert-dot ${a.severity || ''}"></div>
+                    <div class="alert-body">
+                        <div class="alert-msg">${escapeHtml(a.message || a.log_level || 'Alert')}</div>
+                        <div class="alert-meta">
+                            <span>${fmtTime(a.timestamp)}</span>
+                            <span>·</span>
+                            <span>${escapeHtml(a.service || '—')}</span>
+                            <span>·</span>
+                            <span class="badge severity ${a.severity || ''}" style="font-size:10px">${a.severity || ''}</span>
+                            <span>·</span>
+                            <span>Score: ${fmtScore(a.anomaly_score)}</span>
+                        </div>
+                    </div>
+                    ${countBadge}
+                </div>`;
+            });
+        }
+
+        function clearAlerts() {
+            fetch('/api/clear_alerts', { method: 'POST' }).then(() => {
+                alertCache = [];
+                renderAlertFeed();
+                fetchOverview();
+                showToast('Alerts cleared');
+            });
+        }
+
+        /* ================================================================
+           LIVE LOGS
+           ================================================================ */
+        let allLogs = [];
+        let logFilter = 'ALL';
+        let autoScroll = true;
+
+        function fetchLogs() {
+            fetch('/api/logs').then(r => r.json()).then(data => {
+                allLogs = data.logs || [];
+                document.getElementById('logs-count-label').textContent = `${allLogs.length} entries`;
+                renderLogEntries();
+            });
+        }
+
+        function renderLogEntries() {
+            const container = document.getElementById('log-entries-container');
+            const searchTerm = (document.getElementById('log-search').value || '').toLowerCase();
+
+            let filtered = allLogs.slice().reverse();
+            if (logFilter !== 'ALL') {
+                filtered = filtered.filter(l => {
+                    const level = (l.level || '').trim().toUpperCase();
+                    if (logFilter === 'WARN') return level === 'WARN' || level === 'WARNING';
+                    return level === logFilter;
+                });
+            }
+            if (searchTerm) {
+                filtered = filtered.filter(l =>
+                    (l.message || '').toLowerCase().includes(searchTerm) ||
+                    (l.service || '').toLowerCase().includes(searchTerm)
+                );
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-state" id="logs-empty"><span class="prompt" style="color:var(--green)">&gt;</span> Waiting for logs...<span class="cursor"></span></div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            filtered.forEach(l => {
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                const lvl = (l.level || '').trim().toUpperCase();
+                entry.innerHTML = `
+                    <span class="log-time">${fmtTime(l.timestamp)}</span>
+                    <span class="log-badge"><span class="badge ${lvl}">[${lvl || '—'}]</span></span>
+                    <span class="log-service">${escapeHtml(l.service || '—')}</span>
+                    <span class="log-message">${escapeHtml(l.message || '')}</span>
+                `;
+                container.appendChild(entry);
+            });
+
+            if (autoScroll) {
+                container.scrollTop = 0;
+            }
+        }
+
+        function setLogFilter(level, btn) {
+            logFilter = level;
+            document.querySelectorAll('.log-toolbar .filter-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            renderLogEntries();
+        }
+
+        function filterLogsView() {
+            renderLogEntries();
+        }
+
+        function toggleAutoScroll() {
+            autoScroll = !autoScroll;
+            const btn = document.getElementById('autoscroll-btn');
+            btn.innerHTML = `<span class="prompt">&gt;</span> Auto-scroll: ${autoScroll ? 'ON' : 'OFF'}`;
+        }
+
+        /* ================================================================
+           ANALYTICS
+           ================================================================ */
+        let currentRange = '15m';
+        function setRange(r, btn) {
+            currentRange = r;
+            document.querySelectorAll('#range-controls .range-pill').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            fetchAnalytics();
+        }
+
+        function fetchAnalytics() {
+            fetch(`/api/analytics?range=${currentRange}`).then(r => r.json()).then(data => {
+                renderSeverityTimeline(data.severity_over_time || []);
+                renderLogLevelChart(data.log_level_proportions || {});
+                renderAnomalyScoreChart(data.anomaly_score_over_time || []);
+                renderNoisyServices(data.top_noisy_services || []);
+            });
+        }
+
+        function renderSeverityTimeline(data) {
+            destroyChart('sev-time');
+            const labels = data.length === 0 ? ['No Data'] : data.map(d => fmtShortTime(d.timestamp));
+            chartInstances['sev-time'] = new Chart(document.getElementById('chart-severity-time'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: data.length === 0 ? [{ label: 'No Data', data: [0], backgroundColor: '#222' }] : [
+                        { label: 'Critical', data: data.map(d => d.Critical), backgroundColor: '#FF5F56', borderRadius: 2 },
+                        { label: 'High', data: data.map(d => d.High), backgroundColor: '#FF9F43', borderRadius: 2 },
+                        { label: 'Medium', data: data.map(d => d.Medium), backgroundColor: '#FFD866', borderRadius: 2 },
+                        { label: 'Low', data: data.map(d => d.Low), backgroundColor: '#00FF41', borderRadius: 2 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true, ...darkScaleOpts },
+                        y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1, ...darkScaleOpts.ticks }, grid: darkScaleOpts.grid }
+                    },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        function renderLogLevelChart(data) {
+            destroyChart('log-lvl');
+            const labels = Object.keys(data);
+            const values = Object.values(data);
+            const total = values.reduce((a, b) => a + b, 0);
+            const colors = { ERROR: '#FF5F56', CRITICAL: '#FF5F56', WARN: '#FFD866', WARNING: '#FFD866', INFO: '#4D9EFF', DEBUG: '#555555' };
+            chartInstances['log-lvl'] = new Chart(document.getElementById('chart-log-levels'), {
+                type: 'doughnut',
+                data: {
+                    labels: total === 0 ? ['No Data'] : labels,
+                    datasets: [{ 
+                        data: total === 0 ? [1] : values, 
+                        backgroundColor: total === 0 ? ['#222'] : labels.map(l => colors[l.trim().toUpperCase()] || '#333'), 
+                        borderWidth: 0, 
+                        borderColor: '#111111' 
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '65%',
+                    plugins: { legend: { position: 'bottom' }, tooltip: { enabled: total !== 0 } }
+                }
+            });
+        }
+
+        function renderAnomalyScoreChart(data) {
+            destroyChart('anom-score');
+            const labels = data.length === 0 ? ['No Data'] : data.map(d => fmtShortTime(d.timestamp));
+            const ctx = document.getElementById('chart-anomaly-score').getContext('2d');
+
+            // Create gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, 240);
+            gradient.addColorStop(0, 'rgba(77, 158, 255, 0.2)');
+            gradient.addColorStop(1, 'rgba(77, 158, 255, 0)');
+
+            chartInstances['anom-score'] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: data.length === 0 ? [{ label: 'No Data', data: [0], borderColor: '#222', pointRadius: 0 }] : [{
+                        label: 'Anomaly Score',
+                        data: data.map(d => d.score),
+                        borderColor: '#4D9EFF',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#4D9EFF',
+                        pointBorderColor: '#111111',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: { ...darkScaleOpts },
+                        y: { ...darkScaleOpts, suggestedMin: -1, suggestedMax: 1 }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function renderNoisyServices(data) {
+            const tbody = document.getElementById('noisy-services-body');
+            const empty = document.getElementById('noisy-empty');
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '';
+                empty.style.display = 'block';
+                return;
+            }
+            empty.style.display = 'none';
+            tbody.innerHTML = '';
+            data.forEach(s => {
+                tbody.innerHTML += `<tr>
+                    <td style="color:var(--text-primary)">${escapeHtml(s.service)}</td>
+                    <td style="font-weight:600;color:var(--text-primary)">${s.count}</td>
+                </tr>`;
+            });
+        }
+
+        /* ================================================================
+           ERROR EXPLORER
+           ================================================================ */
+        function fetchErrors() {
+            fetch('/api/alerts').then(r => r.json()).then(data => {
+                const alerts = data.alerts || [];
+                const errorAlerts = alerts.filter(a =>
+                    (a.severity === 'Critical' || a.severity === 'High') ||
+                    (a.log_level || '').toUpperCase() === 'ERROR'
+                );
+
+                const container = document.getElementById('error-list');
+                if (errorAlerts.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><span class="prompt" style="color:var(--green)">&gt;</span> No errors detected<span class="cursor"></span></div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                errorAlerts.forEach((a, i) => {
+                    const card = document.createElement('div');
+                    card.className = 'error-card';
+                    card.innerHTML = `
+                        <div class="error-header" onclick="this.parentElement.classList.toggle('expanded')">
+                            <span class="error-chevron">▶</span>
+                            <span class="badge severity ${a.severity || ''}" style="flex-shrink:0">${a.severity || '—'}</span>
+                            <div class="error-summary">
+                                <div class="error-msg">${escapeHtml(a.message || a.log_level || 'Error')}</div>
+                                <div class="error-info">
+                                    <span>${escapeHtml(a.service || '—')}</span>
+                                    <span>${fmtTime(a.timestamp)}</span>
+                                    <span>Score: ${fmtScore(a.anomaly_score)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="error-detail">
+                            <div class="error-label">Full Message</div>
+                            <div class="error-code">${escapeHtml(a.message || 'No details available')}</div>
+                            <div class="error-label">Service</div>
+                            <div style="font-family:var(--mono-code);font-size:13px;color:var(--text-secondary);margin-top:4px">${escapeHtml(a.service || '—')}</div>
+                            <div class="error-label">Anomaly Score</div>
+                            <div style="font-family:var(--mono-code);font-size:13px;color:var(--text-secondary);margin-top:4px">${fmtScore(a.anomaly_score)}</div>
+                            <div class="error-label">Timestamp</div>
+                            <div style="font-family:var(--mono-code);font-size:13px;color:var(--text-secondary);margin-top:4px">${a.timestamp || '—'}</div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            });
+        }
+
+        /* ================================================================
+           TIMELINE
+           ================================================================ */
+        function fetchTimeline() {
+            fetch('/api/logs').then(r => r.json()).then(data => {
+                const logs = data.logs || [];
+                const container = document.getElementById('timeline-container');
+
+                if (logs.length === 0) {
+                    container.innerHTML = '<div class="empty-state" style="padding-left:0"><span class="prompt" style="color:var(--green)">&gt;</span> Waiting for events...<span class="cursor"></span></div>';
+                    return;
+                }
+
+                // Show last 50 logs as timeline
+                const recent = logs.slice(-50).reverse();
+                container.innerHTML = '';
+                recent.forEach(l => {
+                    const level = (l.level || '').toUpperCase();
+                    let dotClass = 'info';
+                    if (level === 'ERROR' || level === 'CRITICAL') dotClass = 'error';
+                    else if (level === 'WARN' || level === 'WARNING') dotClass = 'warning';
+                    else if (level === 'DEBUG') dotClass = 'debug';
+                    else if (level === 'SUCCESS') dotClass = 'success';
+
+                    const item = document.createElement('div');
+                    item.className = 'timeline-item';
+                    item.innerHTML = `
+                        <div class="timeline-dot ${dotClass}"></div>
+                        <div class="timeline-time">${fmtTime(l.timestamp)} · <span class="badge ${l.level || ''}" style="font-size:10px">${l.level || '—'}</span></div>
+                        <div class="timeline-content">
+                            <span class="highlight">${escapeHtml(l.service || '—')}</span> — ${escapeHtml(l.message || '')}
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            });
+        }
+
+        /* ================================================================
+           SEARCH
+           ================================================================ */
+        let searchDebounce = null;
+        function performSearch() {
+            clearTimeout(searchDebounce);
+            searchDebounce = setTimeout(() => {
+                const query = (document.getElementById('search-input').value || '').trim().toLowerCase();
+                const container = document.getElementById('search-results');
+
+                if (!query) {
+                    container.innerHTML = '<div class="empty-state"><span class="prompt" style="color:var(--green)">&gt;</span> Enter a query above<span class="cursor"></span></div>';
+                    return;
+                }
+
+                // Search through allLogs (if loaded) or fetch
+                const searchInLogs = (logs) => {
+                    let isRegex = false;
+                    let regex;
+                    try { regex = new RegExp(query, 'i'); isRegex = true; } catch (e) { isRegex = false; }
+
+                    const results = logs.filter(l => {
+                        const msg = (l.message || '').toLowerCase();
+                        const svc = (l.service || '').toLowerCase();
+                        const lvl = (l.level || '').toLowerCase();
+                        if (isRegex) return regex.test(l.message || '') || regex.test(l.service || '') || regex.test(l.level || '');
+                        return msg.includes(query) || svc.includes(query) || lvl.includes(query);
+                    });
+
+                    if (results.length === 0) {
+                        container.innerHTML = `<div class="empty-state"><span class="prompt" style="color:var(--green)">&gt;</span> No results for "${escapeHtml(query)}"<span class="cursor"></span></div>`;
+                        return;
+                    }
+
+                    container.innerHTML = `<div style="font-family:var(--mono-heading);font-size:11px;color:var(--text-dim);margin-bottom:12px;">${results.length} result${results.length !== 1 ? 's' : ''} found</div>`;
+                    results.slice(0, 100).reverse().forEach(l => {
+                        container.innerHTML += `<div class="log-entry" style="border-bottom:1px solid var(--border)">
+                            <span class="log-time">${fmtTime(l.timestamp)}</span>
+                            <span class="log-badge"><span class="badge ${l.level || ''}">[${l.level || '—'}]</span></span>
+                            <span class="log-service">${escapeHtml(l.service || '—')}</span>
+                            <span class="log-message">${escapeHtml(l.message || '')}</span>
+                        </div>`;
+                    });
+                };
+
+                if (allLogs.length > 0) {
+                    searchInLogs(allLogs);
+                } else {
+                    fetch('/api/logs').then(r => r.json()).then(data => {
+                        allLogs = data.logs || [];
+                        searchInLogs(allLogs);
+                    });
+                }
+            }, 250);
+        }
+
+        /* ================================================================
+           EXPORT
+           ================================================================ */
+        function exportData(format) {
+            Promise.all([
+                fetch('/api/logs').then(r => r.json()),
+                fetch('/api/alerts').then(r => r.json())
+            ]).then(([logsData, alertsData]) => {
+                const logs = logsData.logs || [];
+                const alerts = alertsData.alerts || [];
+                let content, filename, mimeType;
+
+                if (format === 'json') {
+                    content = JSON.stringify({ logs, alerts, exported_at: new Date().toISOString() }, null, 2);
+                    filename = `log_analyzer_export_${Date.now()}.json`;
+                    mimeType = 'application/json';
+                } else if (format === 'csv') {
+                    let csv = 'Timestamp,Level,Service,Message,Anomaly Score\n';
+                    logs.forEach(l => {
+                        csv += `"${l.timestamp || ''}","${l.level || ''}","${l.service || ''}","${(l.message || '').replace(/"/g, '""')}","${l.anomaly_score || 0}"\n`;
+                    });
+                    content = csv;
+                    filename = `log_analyzer_export_${Date.now()}.csv`;
+                    mimeType = 'text/csv';
+                } else {
+                    // Report format — markdown
+                    const counts = alertsData.alert_counts || {};
+                    let md = `# Log Analyzer Report\n\n`;
+                    md += `**Generated:** ${new Date().toISOString()}\n\n`;
+                    md += `## Summary\n\n`;
+                    md += `- Total Logs: ${logs.length}\n`;
+                    md += `- Total Alerts: ${alerts.length}\n`;
+                    Object.entries(counts).forEach(([k, v]) => { md += `- ${k}: ${v}\n`; });
+                    md += `\n## Recent Alerts\n\n`;
+                    alerts.slice(0, 20).forEach(a => {
+                        md += `- [${a.severity}] ${a.message || a.log_level} — ${a.service || '—'} (${a.timestamp})\n`;
+                    });
+                    content = md;
+                    filename = `log_analyzer_report_${Date.now()}.md`;
+                    mimeType = 'text/markdown';
+                }
+
+                const blob = new Blob([content], { type: mimeType });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast(`Exported ${filename}`);
+            });
+        }
+
+        /* ================================================================
+           MONITORING CONTROL
+           ================================================================ */
+        let isMonitoring = true;
+        let pollTimer = null;
+
+        function startPolling() {
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = setInterval(() => {
+                fetchAlerts();
+                fetchOverview();
+                // Update live logs if that tab is active
+                if (document.getElementById('live-logs').classList.contains('active')) {
+                    fetchLogs();
+                }
+            }, 3000);
+        }
+
+        function stopPolling() {
+            if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        }
+
+        function updateMonitoringUI(active) {
+            isMonitoring = active;
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            const btn = document.getElementById('monitoring-btn');
+
+            if (active) {
+                dot.style.background = 'var(--green)';
+                dot.classList.add('active');
+                text.textContent = 'MONITORING';
+                btn.textContent = '⏹ Stop';
+                btn.className = 'topbar-btn';
+                startPolling();
+            } else {
+                dot.style.background = 'var(--red)';
+                dot.classList.remove('active');
+                text.textContent = 'STOPPED';
+                btn.textContent = '▶ Start';
+                btn.className = 'topbar-btn';
+                stopPolling();
+            }
+        }
+
+        function toggleMonitoring() {
+            if (isMonitoring) {
+                fetch('/stop_monitoring', { method: 'POST' })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            updateMonitoringUI(false);
+                            showToast('Monitoring stopped');
+                        }
+                    });
+            } else {
+                fetch('/start_monitoring', { method: 'POST' })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            updateMonitoringUI(true);
+                            showToast('Monitoring resumed');
+                        } else {
+                            showToast(data.message || 'Could not start monitoring');
+                        }
+                    });
+            }
+        }
+
+        // Check initial status and config
+        fetchConfig();
+        fetch('/monitoring_status').then(r => r.json()).then(data => {
+            updateMonitoringUI(data.monitoring);
+        });
+
+        /* ================================================================
+           INITIAL LOAD
+           ================================================================ */
+        fetchOverview();
+        fetchAlerts();
+        startPolling();
+    </script>
+</body>
+
+</html>
