@@ -37,7 +37,7 @@ secret_messages = [
 if __name__ == "__main__":
     print("Starting comprehensive mock app for LogSight feature testing...")
     
-    for _ in range(150):
+    while True:
         # Pick a random logger
         logger = random.choice(loggers)
         
