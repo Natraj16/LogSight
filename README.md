@@ -19,14 +19,17 @@ Traditionally, log analytics (DataDog, Splunk, ELK) requires complex infrastruct
 
 ## Installation
 
-LogSight is designed to be installed as a global CLI tool via `pip`.
+LogSight is designed to be installed globally via `pip`.
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/logsight.git
-cd logsight
+pip install logsight
+```
 
-# Install locally in editable mode
+### Developing from source
+If you want to contribute or modify LogSight locally:
+```bash
+git clone https://github.com/Natraj16/LogSight.git
+cd LogSight
 pip install -e .
 ```
 
