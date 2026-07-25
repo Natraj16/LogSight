@@ -1,4 +1,11 @@
 const bootSequence = [
+    { text: "$ pip install logsight", delay: 800, class: "terminal-prompt" },
+    { text: "Collecting logsight", delay: 400 },
+    { text: "Downloading logsight-1.0.0-py3-none-any.whl (50 kB)", delay: 300 },
+    { text: "Installing collected packages: logsight", delay: 200 },
+    { text: "Successfully installed logsight-1.0.0", delay: 100, class: "terminal-success" },
+    { text: "", delay: 400 },
+    { text: "$ logsight run uvicorn app.main:app", delay: 600, class: "terminal-prompt" },
     { text: "Loading ML model...", delay: 200 },
     { text: "Loaded legacy model from models/model.pkl", delay: 400 },
     { text: "Starting process wrapper for command: uvicorn app.main:app", delay: 300 },
