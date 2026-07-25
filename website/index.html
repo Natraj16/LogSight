@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogSight | ML Log Analytics for Localhost</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <div class="logo">
+                <span class="prompt">></span> <span style="font-family: var(--mono-logo);">LOG_SIGHT</span>
+            </div>
+            <div class="nav-links">
+                <a href="docs.html">Documentation</a>
+                <a href="https://github.com/Natraj16/LogSight" target="_blank">GitHub</a>
+            </div>
+        </nav>
+
+        <section class="hero">
+            <h1>Machine Learning Log Analytics<br><span>for localhost.</span></h1>
+            <p>Zero-config anomaly detection, secret scrubbing, and a premium dashboard. Bring enterprise-grade observability to your local development environment without the headache of setting up ELK or Datadog.</p>
+            
+            <div>
+                <a href="docs.html" class="btn">Get Started</a>
+                <a href="https://github.com/Natraj16/LogSight" class="btn btn-secondary">View Source</a>
+            </div>
+        </section>
+
+        <div class="terminal">
+            <div class="terminal-header">
+                <div class="dot red"></div>
+                <div class="dot yellow"></div>
+                <div class="dot green"></div>
+            </div>
+            <div class="terminal-body" id="boot-sequence">
+                <!-- Javascript will populate this -->
+            </div>
+        </div>
+
+        <section class="features">
+            <div class="feature-card">
+                <h3>0 Config Required</h3>
+                <p>No log shippers or databases. Just wrap your existing startup command (e.g. <code>logsight run -- python app.py</code>) and LogSight intercepts everything automatically.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Real-Time ML</h3>
+                <p>Uses an unsupervised Isolation Forest model from scikit-learn to score logs in real-time, instantly surfacing anomalies without requiring manual rules.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Premium Dashboard</h3>
+                <p>A beautiful dark-mode glassmorphism UI served directly to your browser on port 5000. Features streaming tails, severity distribution charts, and critical alerts.</p>
+            </div>
+        </section>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+</body>
+</html>

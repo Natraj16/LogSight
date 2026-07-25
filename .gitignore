@@ -80,3 +80,7 @@ recovery_codes*
 .idea/
 .vscode/
 *.swp
+
+# Website
+website/node_modules/
+website/dist/

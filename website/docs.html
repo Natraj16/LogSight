@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogSight | Documentation</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <div class="logo">
+                <span class="prompt">></span> <a href="index.html" style="color:var(--text-primary); text-decoration:none;"><span style="font-family: var(--mono-logo);">LOG_SIGHT</span></a>
+            </div>
+            <div class="nav-links">
+                <a href="docs.html" style="color:#fff;">Documentation</a>
+                <a href="https://github.com/Natraj16/LogSight" target="_blank">GitHub</a>
+            </div>
+        </nav>
+
+        <div class="docs-layout">
+            <aside class="docs-sidebar">
+                <h4>Getting Started</h4>
+                <ul>
+                    <li><a href="#installation" class="active">Installation</a></li>
+                    <li><a href="#run-mode">Run Mode (Wrapper)</a></li>
+                    <li><a href="#watch-mode">Watch Mode (Tail)</a></li>
+                </ul>
+                
+                <h4 style="margin-top: 32px;">Core Concepts</h4>
+                <ul>
+                    <li><a href="#ml-model">ML Anomaly Detection</a></li>
+                    <li><a href="#secret-scrubbing">Secret Scrubbing</a></li>
+                    <li><a href="#dashboard">The Dashboard</a></li>
+                </ul>
+            </aside>
+            
+            <main class="docs-content">
+                <h1>Documentation</h1>
+                <p>Welcome to the official LogSight documentation. Learn how to bring enterprise-grade Machine Learning log analytics directly to your local development environment with zero configuration.</p>
+                
+                <h2 id="installation">Installation</h2>
+                <p>LogSight is published on PyPI and can be installed globally using <code>pip</code>. Python 3.8+ is required.</p>
+                <pre><code>pip install logsight</code></pre>
+                
+                <h2 id="run-mode">Run Mode (Wrapper)</h2>
+                <p>Run Mode is the easiest way to use LogSight. You simply prepend <code>logsight run</code> to whatever command you normally use to start your application.</p>
+                <p>Because LogSight acts purely as a wrapper around the standard output, you can run it on any application without making any code changes or configuration updates.</p>
+                <pre><code># Wrap a Python/FastAPI app
+logsight run uvicorn app.main:app --reload
+
+# Wrap a React/Next.js/Node app
+logsight run npm run dev
+
+# Wrap a Docker Compose stack
+logsight run docker-compose up</code></pre>
+
+                <h2 id="watch-mode">Watch Mode (Tail)</h2>
+                <p>If your application already writes logs to a file (or multiple files) instead of standard output, LogSight can simply tail those files in the background.</p>
+                <pre><code>logsight watch path/to/application.log path/to/auth.log</code></pre>
+
+                <h2 id="ml-model">ML Anomaly Detection</h2>
+                <p>LogSight uses an unsupervised Machine Learning pipeline based on an <strong>Isolation Forest</strong> algorithm from <code>scikit-learn</code>.</p>
+                <p>It automatically extracts features from your logs such as log levels, text characteristics, and the rate of generation. The model trains itself dynamically on your application's baseline log behavior and scores logs in real-time. The higher the anomaly score, the more unusual the log event is compared to normal traffic.</p>
+
+                <h2 id="secret-scrubbing">Secret Scrubbing</h2>
+                <p>Since LogSight runs locally, it is inherently secure. However, to prevent you from accidentally sharing screenshots or pasting logs that contain sensitive data, LogSight automatically scrubs standard secret patterns.</p>
+                <p>It will redact things like AWS Credentials (<code>AKIA...</code>), JWTs, API Keys, and passwords from your terminal and dashboard.</p>
+
+                <h2 id="dashboard">The Dashboard</h2>
+                <p>Whenever you start LogSight, it automatically spins up a background Flask server on port 5000 and opens your browser to the beautiful, dark-mode dashboard.</p>
+                <p>The dashboard provides:</p>
+                <ul>
+                    <li>Live streaming log tailing.</li>
+                    <li>Severity distribution and anomaly scoring over time.</li>
+                    <li>Top noisy services charts.</li>
+                    <li>Critical alert feeds with visual cues.</li>
+                </ul>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
