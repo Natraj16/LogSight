@@ -66,6 +66,16 @@ models/
 data/
 *.log
 
+# Secrets, Tokens, and Recovery Codes
+*token*.txt
+*recovery*.txt
+*secret*.txt
+pypi_token*
+pypi-token*
+recovery_codes*
+.env*
+!*.env.example
+
 # IDEs
 .idea/
 .vscode/
