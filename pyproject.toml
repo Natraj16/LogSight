@@ -9,11 +9,25 @@ description = "Zero-config, local, ML-based real-time log anomaly detector for d
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
+authors = [
+    {name = "Natraj", email = "natraj@example.com"}
+]
+keywords = ["logs", "anomaly", "machine-learning", "monitoring", "cli"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+]
 dependencies = [
     "Flask>=3.0.0",
     "scikit-learn>=1.4.0",
     "numpy>=1.26.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Natraj16/LogSight"
+Repository = "https://github.com/Natraj16/LogSight.git"
 
 [project.scripts]
 logsight = "logsight.app:main"
