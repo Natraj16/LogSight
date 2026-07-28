@@ -2212,7 +2212,7 @@
         }
 
         function playCriticalSound() {
-            if (appConfig.sound_alerts_enabled !== true) return;
+            if (appConfig.sound_alerts_enabled === false) return;
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 if (!AudioContext) return;
@@ -2485,9 +2485,23 @@
                 const newAlerts = data.alerts || [];
                 const counts = data.alert_counts || {};
 
-                if (newAlerts.length > alertCache.length) {
-                    const diff = newAlerts.slice(0, newAlerts.length - alertCache.length);
-                    const hasCritical = diff.some(a => (a.severity || '').toLowerCase() === 'critical');
+                let diff = [];
+                if (alertCache.length === 0) {
+                    diff = newAlerts;
+                } else if (newAlerts.length > 0) {
+                    const lastKnown = alertCache[0];
+                    const idx = newAlerts.findIndex(a => a.id === lastKnown.id || (a.timestamp === lastKnown.timestamp && a.message === lastKnown.message));
+                    if (idx > 0) {
+                        diff = newAlerts.slice(0, idx);
+                    } else if (idx === -1 && JSON.stringify(newAlerts[0]) !== JSON.stringify(lastKnown)) {
+                        diff = newAlerts;
+                    }
+                }
+
+                if (diff.length > 0 && alertCache.length > 0) {
+                    const hasCriticalSeverity = diff.some(a => (a.severity || '').toLowerCase() === 'critical');
+                    const hasCriticalLog = diff.some(a => ['critical', 'fatal'].includes((a.log_level || '').toLowerCase()));
+                    const hasWarnLog = diff.some(a => ['warn', 'warning'].includes((a.log_level || '').toLowerCase()));
                     const numImportant = diff.filter(a => ['critical', 'high'].includes((a.severity || '').toLowerCase())).length;
                     
                     if (numImportant > 0 && !document.hasFocus()) {
@@ -2495,8 +2509,11 @@
                         updateTabTitle();
                     }
                     
-                    if (hasCritical) {
-                        showToast('⚠ Critical anomaly detected!');
+                    if (hasCriticalSeverity || hasCriticalLog) {
+                        showToast('⚠ Critical anomaly or log detected!');
+                        playCriticalSound();
+                    } else if (hasWarnLog) {
+                        showToast('⚠ Warning log detected!');
                         playCriticalSound();
                     }
                 }
@@ -2625,6 +2642,7 @@
                     <span class="log-badge"><span class="badge ${lvl}">[${lvl || '—'}]</span></span>
                     <span class="log-service">${escapeHtml(l.service || '—')}</span>
                     <span class="log-message">${escapeHtml(l.message || '')}</span>
+                    <span class="log-score" style="color:var(--text-dim); margin-left:12px; font-size:11px;">[Score: ${l.anomaly_score !== undefined ? parseFloat(l.anomaly_score).toFixed(2) : '0.00'}]</span>
                 `;
                 container.appendChild(entry);
             });
@@ -2907,6 +2925,7 @@
                             <span class="log-badge"><span class="badge ${l.level || ''}">[${l.level || '—'}]</span></span>
                             <span class="log-service">${escapeHtml(l.service || '—')}</span>
                             <span class="log-message">${escapeHtml(l.message || '')}</span>
+                            <span class="log-score" style="color:var(--text-dim); margin-left:12px; font-size:11px;">[Score: ${l.anomaly_score !== undefined ? parseFloat(l.anomaly_score).toFixed(2) : '0.00'}]</span>
                         </div>`;
                     });
                 };
