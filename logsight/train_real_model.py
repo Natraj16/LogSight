@@ -37,10 +37,9 @@ def download_openstack_logs(dataset_path: str = "data/datasets/openstack_logs.lo
         os.makedirs(dataset_dir)
         print(f"Created directory: {dataset_dir}")
 
-    # UCI ML Repository OpenStack 2012 logs
-    # Note: The UCI endpoint may be unavailable. Using alternative mirror.
-    # Original: https://archive.ics.uci.edu/static/public/548/openstack+logs+2012.zip
-    url = "https://www.cs.unm.edu/~mueen/LogData/openstack_2012.log"
+    # LogHub OpenStack logs
+    # Using the 2k dataset sample from the logpai/loghub repository
+    url = "https://raw.githubusercontent.com/logpai/loghub/master/OpenStack/OpenStack_2k.log"
 
     try:
         print(f"Downloading OpenStack logs from {url}...")
@@ -52,7 +51,7 @@ def download_openstack_logs(dataset_path: str = "data/datasets/openstack_logs.lo
         print(f"Error downloading logs: {e}")
         print(f"\nManual Setup Instructions:")
         print(f"1. Download OpenStack logs from:")
-        print(f"   https://www.cs.unm.edu/~mueen/LogData/openstack_2012.log")
+        print(f"   https://raw.githubusercontent.com/logpai/loghub/master/OpenStack/OpenStack_2k.log")
         print(f"2. Save to: {dataset_path}")
         print(f"3. Or place any log file matching format:")
         print(f"   YYYY-MM-DD HH:MM:SS LEVEL SERVICE message")
@@ -243,7 +242,7 @@ def generate_realistic_training_logs(
 
 def main():
     print("INTELLIGENT LOG ANALYZER - MODEL TRAINING PIPELINE")
-    print("Real Log Dataset: OpenStack 2012 (UCI ML Repository)")
+    print("Real Log Dataset: OpenStack logs (LogHub / LogPAI)")
     print("=" * 70)
 
     # Step 1: Download dataset (or generate realistic logs as fallback)
