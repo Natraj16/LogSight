@@ -290,9 +290,7 @@ def main():
     print(f"[+] Quantile calibration data saved")
     print(f"[+] Model ready for anomaly detection")
     print("\nRun the app to start monitoring logs:")
-    print("  Windows: start.bat")
-    print("  Linux/Mac: bash start.sh")
-    print("  Direct: python app.py")
+    print("  logsight run <your_startup_command>")
 
     return True
 
