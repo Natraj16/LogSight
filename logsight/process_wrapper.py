@@ -50,16 +50,26 @@ class ProcessWrapper:
         self._save_config()
         import shutil
         import sys
-        if not shutil.which(self.command[0]):
+        executable = shutil.which(self.command[0])
+        if not executable:
             print(f"[ERROR] '{self.command[0]}' not found. Is it installed and in your PATH?")
             sys.exit(1)
+        
+        self.command[0] = executable
+
+        import os
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
 
         self.process = subprocess.Popen(
             self.command,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            bufsize=1
+            bufsize=1,
+            encoding="utf-8",
+            errors="replace",
+            env=env
         )
         self.running = True
         self._thread = threading.Thread(target=self._monitor, daemon=True)

@@ -10,7 +10,10 @@ import numpy as np
 from .model import LogAnomalyDetector
 
 
-def load_or_train_model(model_path: str = "models/model.pkl") -> LogAnomalyDetector:
+import os
+DEFAULT_MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models", "model.pkl")
+
+def load_or_train_model(model_path: str = DEFAULT_MODEL_PATH) -> LogAnomalyDetector:
     """Load model from pickle or train new one if not found."""
     detector = LogAnomalyDetector()
 
