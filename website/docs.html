@@ -62,7 +62,7 @@ logsight run docker-compose up</code></pre>
 
                 <h2 id="ml-model">ML Anomaly Detection</h2>
                 <p>LogSight uses an unsupervised Machine Learning pipeline based on an <strong>Isolation Forest</strong> algorithm from <code>scikit-learn</code>.</p>
-                <p>It automatically extracts features from your logs such as log levels, text characteristics, and the rate of generation. The model trains itself dynamically on your application's baseline log behavior and scores logs in real-time. The higher the anomaly score, the more unusual the log event is compared to normal traffic.</p>
+                <p>It automatically extracts features from your logs such as log levels, text characteristics, and the rate of generation. The model is <strong>pre-trained offline</strong> on diverse datasets (including OpenStack backend server logs and popular frontend framework outputs) and scores your logs in real-time. The higher the anomaly score, the more unusual the log event is compared to standard system traffic.</p>
 
                 <h2 id="secret-scrubbing">Secret Scrubbing</h2>
                 <p>Since LogSight runs locally, it is inherently secure. However, to prevent you from accidentally sharing screenshots or pasting logs that contain sensitive data, LogSight automatically scrubs standard secret patterns.</p>
