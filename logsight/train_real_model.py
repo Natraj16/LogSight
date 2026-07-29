@@ -138,7 +138,7 @@ def train_and_calibrate_model(
 def save_model_with_calibration(
     detector: LogAnomalyDetector,
     quantiles_dict: Dict[float, float],
-    model_path: str = "models/model.pkl"
+    model_path: str = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models", "model.pkl")
 ) -> bool:
     """Save trained model and quantile calibration to pickle file."""
     try:
@@ -240,6 +240,44 @@ def generate_realistic_training_logs(
         return False
 
 
+def generate_frontend_logs() -> list[str]:
+    """Generate synthetic frontend startup logs for Vite, Next.js, Angular, etc."""
+    logs = []
+    # Vite / React
+    logs.extend([
+        "> frontend@0.0.0 dev",
+        "> vite",
+        "VITE v8.0.16  ready in 500 ms",
+        "  ➜  Local:   http://localhost:5173/",
+        "  ➜  Network: use --host to expose",
+        "  ➜  press h + enter to show help",
+        "hmr update /src/App.jsx",
+    ])
+    # Next.js
+    logs.extend([
+        "ready - started server on 0.0.0.0:3000, url: http://localhost:3000",
+        "event - compiled client and server successfully in 1250 ms",
+        "wait  - compiling...",
+        "info  - automatically enabled Fast Refresh for 1 custom loader",
+    ])
+    # Angular
+    logs.extend([
+        "Angular Live Development Server is listening on localhost:4200, open your browser on http://localhost:4200/",
+        "[INFO] Compiled successfully."
+    ])
+    # Webpack / CRA
+    logs.extend([
+        "Starting the development server...",
+        "Compiled successfully!",
+        "You can now view your app in the browser.",
+        "Local:            http://localhost:3000",
+        "On Your Network:  http://192.168.1.5:3000",
+        "Note that the development build is not optimized."
+    ])
+    # Duplicate to give them weight in the dataset
+    return logs * 10
+
+
 def main():
     print("INTELLIGENT LOG ANALYZER - MODEL TRAINING PIPELINE")
     print("Real Log Dataset: OpenStack logs (LogHub / LogPAI)")
@@ -260,6 +298,14 @@ def main():
         if len(parsed_logs) < 1000:
             print(f"Warning: Only {len(parsed_logs)} valid logs parsed.")
             print("Try downloading a larger dataset or check log format.")
+            
+        print("Mixing in synthetic frontend startup logs...")
+        frontend_logs = generate_frontend_logs()
+        for f_log in frontend_logs:
+            parsed = parse_log_line(f_log)
+            if parsed:
+                parsed_logs.append(parsed)
+                
     except Exception as e:
         print(f"Error loading logs: {e}")
         return False
